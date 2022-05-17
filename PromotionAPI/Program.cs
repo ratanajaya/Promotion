@@ -10,10 +10,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton(AppSettingJson.GetGlobalVariable());
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(AppSettingJson.GetConnectionString()));
 builder.Services.AddControllers();
+builder.Services.AddCors(o => o.AddPolicy("MyPolicy", builder => {
+    builder.AllowAnyOrigin()
+           .AllowAnyMethod()
+           .AllowAnyHeader();
+}));
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+
+app.UseCors("MyPolicy");
 
 app.UseHttpsRedirection();
 

@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using PromotionAPI.Models;
 using PromotionAPI.Services;
+using System.IO;
+using System.Text;
 
 namespace PromotionAPI.Controllers
 {
@@ -35,9 +37,9 @@ namespace PromotionAPI.Controllers
 
         [HttpPost("SubmitPromotion")]
         public IActionResult SubmitPromotion(PromotionDto promotion) {
-            var dateId = $"P{DateTime.Now.ToString("YYYYMMDD")}";
-            var existingCount = _db.Promotions.Where(a => a.PromotionId.StartsWith(dateId)).Count();
-            var newId = $"{dateId}{existingCount.ToString("D4")}";
+            var dateId = $"P{DateTime.Now.ToString("yyyyMMdd")}";
+            var sequence = _db.Promotions.Where(a => a.PromotionId.StartsWith(dateId)).Count() + 1;
+            var newId = $"{dateId}{sequence.ToString("D4")}";
 
             _db.Promotions.Add(new Promotion {
                 PromotionId = newId,
@@ -57,6 +59,16 @@ namespace PromotionAPI.Controllers
             _db.RelPromotionStores.AddRange(relPromotionStores);
 
             _db.SaveChanges();
+
+            var sb = new StringBuilder();
+            sb.AppendLine($"FHEAD|{promotion.Description}|||;");
+            sb.AppendLine($"FITEM|[NOT IMPLEMENTED]|{promotion.PromoType}|{promotion.ValueType}|;");
+            promotion.StoreIds.ForEach(a => sb.AppendLine($"FSTORE|{a}|{promotion.StartDate.GetValueOrDefault().ToString("yyyyMMdd")}|{promotion.EndDate.GetValueOrDefault().ToString("yyyyMMdd")}|;"));
+            sb.Append("FTAIL||||");
+            var str = sb.ToString();
+
+            var filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"{newId}.txt");
+            System.IO.File.WriteAllText(filePath, str);
 
             return Ok(newId);
         }
